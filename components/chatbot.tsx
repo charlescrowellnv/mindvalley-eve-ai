@@ -22,9 +22,10 @@ import {
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { useChat } from "@ai-sdk/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import EveAiIcon from "./icons/eve-ai";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { PromptInputTools } from "@/components/ai-elements/prompt-input";
+import { EvaAiIcon } from "./icons/eva-ai-icon";
+import { Label } from "./ui/label";
 
 const suggestions = [
   "I'm feeling stressed, tired, or seeking better sleep",
@@ -102,16 +103,49 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
   );
 
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden h-full ">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden h-full max-w-5xl mx-auto ">
       <Conversation>
         <ConversationContent className="min-h-full flex-1 flex flex-col">
           {messages.length === 0 ? (
             <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-4">
-              <EveAiIcon className="size-16" strokeWidth={0.5} />
-              <span className="text-4xl text-foreground font-mono">Eve AI</span>
-              <p className="text-sm text-foreground">
-                Hi Vishen, ask me anything or choose a suggestion below
-              </p>
+              <div className="flex flex-col items-start justify-center gap-4">
+                <div className="flex items-center justify-center gap-2">
+                  <EvaAiIcon className="size-6" strokeWidth={1} gradient />
+                  <span className="text-lg text-foreground">Eve</span>
+                </div>
+                <p className="text-3xl text-foreground font-semibold">
+                  Hey Changemaker, ready?
+                </p>
+                <ul className="flex flex-col items-start gap-6 w-full text-muted-foreground text-sm list-none py-4">
+                  <li>
+                    <div className="flex flex-col items-start justify-center gap-1">
+                      <span className="font-medium text-foreground text-base">
+                        Explore Mindvalley
+                      </span>
+                      Easily find what you&apos;re looking for across
+                      Mindvalley.
+                    </div>
+                  </li>
+                  <li>
+                    <div className="flex flex-col items-start justify-center gap-1">
+                      <span className="font-medium text-foreground text-base">
+                        Get personalized guidance
+                      </span>
+                      Share your goals or situation to get tailored
+                      recommendations.
+                    </div>
+                  </li>
+                  <li>
+                    <div className="flex flex-col items-start justify-center gap-1">
+                      <span className="font-medium text-foreground text-base">
+                        Need help?
+                      </span>
+                      Get support for the app, membership, certifications, and
+                      more.
+                    </div>
+                  </li>
+                </ul>
+              </div>
             </div>
           ) : (
             messages.map((message, index) => {
@@ -142,15 +176,20 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
       </Conversation>
       <div className="grid shrink-0 gap-4 pt-4">
         {messages.length === 0 && (
-          <Suggestions className="grid w-full sm:grid-cols-2 gap-2 px-4 text-left">
-            {suggestions.map((suggestion) => (
-              <SuggestionItem
-                key={suggestion}
-                onClick={handleSuggestionClick}
-                suggestion={suggestion}
-              />
-            ))}
-          </Suggestions>
+          <div className="flex flex-col gap-2 px-4">
+            <Label className="text-sm text-muted-foreground font-normal">
+              Try one of these:
+            </Label>
+            <Suggestions className="grid w-full sm:grid-cols-2 gap-2 text-left">
+              {suggestions.map((suggestion) => (
+                <SuggestionItem
+                  key={suggestion}
+                  onClick={handleSuggestionClick}
+                  suggestion={suggestion}
+                />
+              ))}
+            </Suggestions>
+          </div>
         )}
         <div className="w-full px-4 pb-4">
           <PromptInput onSubmit={handleSubmit}>
@@ -174,7 +213,7 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
       {error && (
         <div className="p-4 text-sm text-red-500">Error: {error.message}</div>
       )}
-      <p className="mt-4 text-center text-xs text-muted-foreground/50 text-balance">
+      <p className=" text-center text-xs text-muted-foreground/50 text-balance">
         EVE AI provides general information only. It is not medical, financial,
         therapeutic, or professional advice, and may not reflect Mindvalley’s
         views or always be accurate.

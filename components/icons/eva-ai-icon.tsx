@@ -1,0 +1,55 @@
+"use client";
+
+import { useId } from "react";
+
+const PATH_D =
+  "M16.46 4.275C15.3722 3.64691 14.2843 3.01883 13.0002 2.27747C12.3814 1.9202 11.6189 1.92001 11.0001 2.27727C9.89434 2.9157 8.67925 3.61723 7.53997 4.275M16.46 4.275C17.5479 4.90308 18.6358 5.53116 19.9198 6.27252C20.5387 6.62979 20.9201 7.29041 20.9201 8.00494C20.9201 9.48766 20.9201 10.7438 20.9201 12M16.46 4.275V8.2703C16.46 8.98483 16.8412 9.64508 17.46 10.0023L20.9201 12M16.46 4.275L13 6.27265C12.3812 6.62991 11.6188 6.62991 11 6.27265L7.53997 4.275M7.53997 19.725C8.67925 20.3828 9.89435 21.0843 11.0001 21.7227C11.6189 22.08 12.3814 22.0798 13.0002 21.7225C14.2843 20.9812 15.3722 20.3531 16.46 19.725M7.53997 19.725C6.16906 18.9335 4.90793 18.2054 4.07913 17.7269C3.46033 17.3696 3.07994 16.7098 3.07994 15.9953L3.07994 12M7.53997 19.725V15.7297C7.53997 15.0152 7.15877 14.3549 6.53997 13.9976L3.07994 12M7.53997 19.725L11 17.7273C11.6188 17.3701 12.3812 17.3701 13 17.7273L16.46 19.725M20.9201 12C20.9201 13.2562 20.9201 14.5123 20.9201 15.9951C20.9201 16.7096 20.5387 17.3702 19.9198 17.7275C18.6358 18.4688 17.5479 19.0969 16.46 19.725M20.9201 12L17.46 13.9976C16.8412 14.3549 16.46 15.0152 16.46 15.7297V19.725M3.07994 12L3.07994 8.0047C3.07994 7.29017 3.46033 6.63038 4.07913 6.27311C4.90793 5.7946 6.16906 5.06649 7.53997 4.275M3.07994 12L6.53997 10.0023C7.15877 9.64508 7.53997 8.98483 7.53997 8.27029L7.53997 4.275";
+
+export type EvaAiIconProps = React.SVGProps<SVGSVGElement> & {
+  strokeWidth?: number;
+  /** When true, stroke uses the built-in blue→purple radial gradient; when false, stroke is currentColor */
+  gradient?: boolean;
+};
+
+export const EvaAiIcon = ({
+  className = "h-6 w-6",
+  strokeWidth = 2,
+  gradient = false,
+  ...props
+}: EvaAiIconProps) => {
+  const gradientId = useId();
+
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={strokeWidth}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      {gradient && (
+        <defs>
+          <radialGradient
+            id={gradientId}
+            cx="0"
+            cy="0"
+            r="1"
+            gradientUnits="userSpaceOnUse"
+            gradientTransform="translate(12 12) rotate(-90) scale(10.3 8.92006)"
+          >
+            <stop stopColor="#0EA5E9" />
+            <stop offset={1} stopColor="#A855F7" />
+          </radialGradient>
+        </defs>
+      )}
+      <path
+        stroke={gradient ? `url(#${gradientId})` : "currentColor"}
+        d={PATH_D}
+      />
+    </svg>
+  );
+};
+
+export default EvaAiIcon;
