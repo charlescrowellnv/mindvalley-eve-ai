@@ -125,4 +125,31 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Fix multi-line list item indentation with hanging indent */
+  ul[data-streamdown="unordered-list"] {
+    list-style-type: disc !important;
+    list-style-position: outside !important;
+    padding-left: 0 !important;
+    margin-left: 2rem !important;
+  }
+
+  ol[data-streamdown="ordered-list"] {
+    list-style-type: decimal !important;
+    list-style-position: outside !important;
+    padding-left: 0 !important;
+    margin-left: 2rem !important;
+  }
+
+  li[data-streamdown="list-item"] {
+    padding-left: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+    display: list-item !important;
+  }
+
+  /* Ensure nested lists maintain proper spacing */
+  li[data-streamdown="list-item"] > ul,
+  li[data-streamdown="list-item"] > ol {
+    margin-top: 0.5rem !important;
+  }
 }

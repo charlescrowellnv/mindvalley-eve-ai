@@ -19,13 +19,18 @@ import {
   PromptInputSubmit,
   PromptInputTextarea,
 } from "@/components/ai-elements/prompt-input";
-import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
 import { useChat } from "@ai-sdk/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SpeechInput } from "@/components/ai-elements/speech-input";
 import { PromptInputTools } from "@/components/ai-elements/prompt-input";
 import { EvaAiIcon } from "./icons/eva-ai-icon";
 import { Label } from "./ui/label";
+import { Button } from "./ui/button";
+import { ProgramRecommendations } from "@/components/program-recommendations";
+import type { ProgramRecommendationsResult } from "@/lib/types/program";
+import { ConversationSuggestions } from "@/components/conversation-suggestions";
+import type { ConversationSuggestionsResult } from "@/lib/types/suggestion";
+import { Loader2 } from "lucide-react";
 
 const suggestions = [
   "I'm feeling stressed, tired, or seeking better sleep",
@@ -46,11 +51,13 @@ const SuggestionItem = ({
   }, [onClick, suggestion]);
 
   return (
-    <Suggestion
-      className="h-auto w-full rounded-lg border border-border bg-background py-3 text-left text-foreground whitespace-normal hover:bg-muted/50"
+    <Button
+      variant="outline"
+      className="h-auto w-full justify-start px-4 py-3 text-left whitespace-normal"
       onClick={handleClick}
-      suggestion={suggestion}
-    />
+    >
+      <span className="text-sm">{suggestion}</span>
+    </Button>
   );
 };
 
@@ -103,11 +110,11 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
   );
 
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden h-full max-w-5xl mx-auto ">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden h-full max-w-4xl mx-auto">
       <Conversation>
-        <ConversationContent className="min-h-full flex-1 flex flex-col">
+        <ConversationContent className="min-h-full flex-1 flex flex-col w-full">
           {messages.length === 0 ? (
-            <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-4">
+            <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-4 w-full">
               <div className="flex flex-col items-start justify-center gap-4">
                 <div className="flex items-center justify-center gap-2">
                   <EvaAiIcon className="size-6" strokeWidth={1} gradient />
@@ -148,28 +155,155 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
               </div>
             </div>
           ) : (
-            messages.map((message, index) => {
-              const isLastMessage = index === messages.length - 1;
-              const isStreamingLast =
-                status === "streaming" &&
-                isLastMessage &&
-                message.role === "assistant";
-              const content = message.parts
-                .map((part) => (part.type === "text" ? part.text : ""))
-                .join("");
-              return (
-                <Message from={message.role} key={message.id}>
-                  <MessageContent>
-                    <MessageResponse
-                      mode={isStreamingLast ? "streaming" : "static"}
-                      parseIncompleteMarkdown={isStreamingLast}
-                    >
-                      {content}
-                    </MessageResponse>
-                  </MessageContent>
-                </Message>
-              );
-            })
+            <>
+              {messages.map((message, index) => {
+                const isLastMessage = index === messages.length - 1;
+                const isStreamingLast =
+                  status === "streaming" &&
+                  isLastMessage &&
+                  message.role === "assistant";
+
+                return (
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent>
+                      {message.parts.map((part, partIndex) => {
+                      // Handle text parts
+                      if (part.type === "text") {
+                        return (
+                          <MessageResponse
+                            key={partIndex}
+                            mode={isStreamingLast ? "streaming" : "static"}
+                            parseIncompleteMarkdown={isStreamingLast}
+                          >
+                            {part.text}
+                          </MessageResponse>
+                        );
+                      }
+
+                      // Handle tool invocation parts (SDK sends typed part names e.g. tool-get_program_recommendations)
+                      const isToolPart =
+                        part.type === "tool-invocation" ||
+                        part.type === "tool-get_program_recommendations" ||
+                        part.type === "tool-get_conversation_suggestions";
+                      if (isToolPart) {
+                        // Get dynamic messages based on tool type
+                        const getLoadingMessage = () => {
+                          if (
+                            part.type === "tool-get_program_recommendations"
+                          ) {
+                            return "Searching...";
+                          }
+                          if (
+                            part.type === "tool-get_conversation_suggestions"
+                          ) {
+                            return "Thinking...";
+                          }
+                          return "Thinking...";
+                        };
+
+                        const getErrorMessage = () => {
+                          if (
+                            part.type === "tool-get_program_recommendations"
+                          ) {
+                            return "Unable to fetch program recommendations";
+                          }
+                          if (
+                            part.type === "tool-get_conversation_suggestions"
+                          ) {
+                            return "Unable to generate suggestions";
+                          }
+                          return "Unable to complete action";
+                        };
+
+                        // Loading state - tool is being called
+                        if (
+                          part.state === "input-available" ||
+                          part.state === "input-streaming"
+                        ) {
+                          return (
+                            <div
+                              key={partIndex}
+                              className="flex items-center gap-3"
+                            >
+                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                              <span className="text-sm text-muted-foreground">
+                                {getLoadingMessage()}
+                              </span>
+                            </div>
+                          );
+                        }
+
+                        // Error state - tool execution failed
+                        if (part.state === "output-error") {
+                          return (
+                            <div key={partIndex} className="space-y-2">
+                              <p className="text-sm font-medium text-destructive">
+                                {getErrorMessage()}
+                              </p>
+                              {part.errorText && (
+                                <p className="text-xs text-destructive/80">
+                                  {part.errorText}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        // Success state - render custom UI based on tool type
+                        if (part.state === "output-available") {
+                          // Render program recommendations
+                          if (
+                            part.type === "tool-get_program_recommendations"
+                          ) {
+                            return (
+                              <ProgramRecommendations
+                                key={partIndex}
+                                result={
+                                  part.output as ProgramRecommendationsResult
+                                }
+                              />
+                            );
+                          }
+
+                          // Render conversation suggestions
+                          if (
+                            part.type === "tool-get_conversation_suggestions"
+                          ) {
+                            return (
+                              <ConversationSuggestions
+                                key={partIndex}
+                                result={
+                                  part.output as ConversationSuggestionsResult
+                                }
+                                onSuggestionClick={handleSuggestionClick}
+                              />
+                            );
+                          }
+                        }
+                      }
+
+                        return null;
+                      })}
+                    </MessageContent>
+                  </Message>
+                );
+              })}
+              {/* Show loading spinner when waiting for assistant response */}
+              {status === "streaming" &&
+                messages.length > 0 &&
+                messages[messages.length - 1].role === "user" && (
+                  <Message from="assistant" key="loading">
+                    <MessageContent>
+                      <div className="flex items-center gap-3">
+                        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Thinking...
+                        </span>
+                      </div>
+                    </MessageContent>
+                  </Message>
+                )}
+            </>
           )}
         </ConversationContent>
         <ConversationScrollButton />
@@ -177,10 +311,10 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
       <div className="grid shrink-0 gap-4 pt-4">
         {messages.length === 0 && (
           <div className="flex flex-col gap-2 px-4">
-            <Label className="text-sm text-muted-foreground font-normal">
+            <Label className="text-sm font-medium text-muted-foreground">
               Try one of these:
             </Label>
-            <Suggestions className="grid w-full sm:grid-cols-2 gap-2 text-left">
+            <div className="grid w-full sm:grid-cols-2 gap-2">
               {suggestions.map((suggestion) => (
                 <SuggestionItem
                   key={suggestion}
@@ -188,7 +322,7 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
                   suggestion={suggestion}
                 />
               ))}
-            </Suggestions>
+            </div>
           </div>
         )}
         <div className="w-full px-4 pb-4">
