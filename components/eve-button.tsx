@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { EveAiIcon } from "@/components/icons/eve-ai";
 import {
@@ -8,8 +10,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Chatbot from "./chatbot";
+import { useState } from "react";
 
 export const EveButton = () => {
+  const [hasMessages, setHasMessages] = useState(false);
+
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -18,11 +23,12 @@ export const EveButton = () => {
           Eve AI
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-[95vw]! h-[85vh] w-full">
-        <DialogHeader className="flex flex-row justify-between">
+      <DialogContent className="flex flex-col h-full">
+        <DialogHeader className="flex flex-row justify-between ">
+          {hasMessages && <EveAiIcon className="size-5" />}
           <DialogTitle className="sr-only">Eve AI</DialogTitle>
         </DialogHeader>
-        <Chatbot />
+        <Chatbot onHasMessagesChange={setHasMessages} />
       </DialogContent>
     </Dialog>
   );

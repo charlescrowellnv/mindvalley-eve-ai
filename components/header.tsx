@@ -1,5 +1,6 @@
 import { EveButton } from "./eve-button";
 import Image from "next/image";
+import { ThemeButton } from "@/components/theme-button";
 
 export function Header() {
   return (
@@ -12,7 +13,10 @@ export function Header() {
           height={24}
           className="h-6 w-auto"
         />
-        <EveButton />
+        <div className="flex items-center gap-2">
+          <EveButton />
+          <ThemeButton />
+        </div>
       </div>
     </div>
   );

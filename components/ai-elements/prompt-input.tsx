@@ -57,6 +57,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   CornerDownLeftIcon,
+  ArrowUpIcon,
   ImageIcon,
   PlusIcon,
   SquareIcon,
@@ -835,7 +836,7 @@ export const PromptInputTextarea = ({
   onChange,
   onKeyDown,
   className,
-  placeholder = "What would you like to know?",
+  placeholder = "Ask Eve AI...",
   ...props
 }: PromptInputTextareaProps) => {
   const controller = useOptionalPromptInputController();
@@ -1029,7 +1030,7 @@ export const PromptInputButton = ({
   const tooltipContent =
     typeof tooltip === "string" ? tooltip : tooltip.content;
   const shortcut = typeof tooltip === "string" ? undefined : tooltip.shortcut;
-  const side = typeof tooltip === "string" ? "top" : (tooltip.side ?? "top");
+  const side = typeof tooltip === "string" ? "top" : tooltip.side ?? "top";
 
   return (
     <Tooltip>
@@ -1103,7 +1104,7 @@ export const PromptInputSubmit = ({
 }: PromptInputSubmitProps) => {
   const isGenerating = status === "submitted" || status === "streaming";
 
-  let Icon = <CornerDownLeftIcon className="size-4" />;
+  let Icon = <ArrowUpIcon className="size-4" />;
 
   if (status === "submitted") {
     Icon = <Spinner />;

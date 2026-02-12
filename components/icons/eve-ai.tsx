@@ -1,6 +1,18 @@
-export const EveAiIcon = ({ className = "h-6 w-6", ...props }: React.SVGProps<SVGSVGElement>) => {
+export const EveAiIcon = ({
+  className = "h-6 w-6",
+  strokeWidth,
+  ...props
+}: React.SVGProps<SVGSVGElement> & {
+  strokeWidth?: number;
+}) => {
   return (
-    <svg className={className} fill="none" viewBox="0 0 24 24" {...props}>
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={strokeWidth}
+      {...props}
+    >
       <path
         fill="url(#a-nav-logo)"
         fillRule="evenodd"
