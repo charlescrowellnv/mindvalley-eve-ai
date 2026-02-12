@@ -6,7 +6,6 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
-  CardAction,
   CardContent,
   CardFooter,
 } from "./ui/card";
@@ -34,7 +33,7 @@ export function ProgramCard({ recommendation }: ProgramCardProps) {
   };
 
   return (
-    <Card className="transition-all hover:shadow-lg">
+    <Card className="transition-all shadow-lg">
       {/* Background Image with Gradient Overlay */}
       <div className="relative h-48 w-full overflow-hidden -mt-6">
         {/* Gradient Overlay */}

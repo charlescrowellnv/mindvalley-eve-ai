@@ -31,6 +31,7 @@ import type { ProgramRecommendationsResult } from "@/lib/types/program";
 import { ConversationSuggestions } from "@/components/conversation-suggestions";
 import type { ConversationSuggestionsResult } from "@/lib/types/suggestion";
 import { Loader2 } from "lucide-react";
+import { Subheading } from "./elements/subheading";
 
 const suggestions = [
   "I'm feeling stressed, tired, or seeking better sleep",
@@ -120,13 +121,13 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
                   <EvaAiIcon className="size-6" strokeWidth={1} gradient />
                   <span className="text-lg text-foreground">Eve</span>
                 </div>
-                <p className="text-3xl text-foreground font-semibold">
+                <Subheading className="text-3xl text-foreground font-semibold">
                   Hey Changemaker, ready?
-                </p>
+                </Subheading>
                 <ul className="flex flex-col items-start gap-6 w-full text-muted-foreground text-sm list-none py-4">
                   <li>
                     <div className="flex flex-col items-start justify-center gap-1">
-                      <span className="font-medium text-foreground text-base">
+                      <span className="font-medium text-foreground text-lg">
                         Explore Mindvalley
                       </span>
                       Easily find what you&apos;re looking for across
@@ -135,7 +136,7 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
                   </li>
                   <li>
                     <div className="flex flex-col items-start justify-center gap-1">
-                      <span className="font-medium text-foreground text-base">
+                      <span className="font-medium text-foreground text-lg">
                         Get personalized guidance
                       </span>
                       Share your goals or situation to get tailored
@@ -144,7 +145,7 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
                   </li>
                   <li>
                     <div className="flex flex-col items-start justify-center gap-1">
-                      <span className="font-medium text-foreground text-base">
+                      <span className="font-medium text-foreground text-lg">
                         Need help?
                       </span>
                       Get support for the app, membership, certifications, and
@@ -167,120 +168,120 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
                   <Message from={message.role} key={message.id}>
                     <MessageContent>
                       {message.parts.map((part, partIndex) => {
-                      // Handle text parts
-                      if (part.type === "text") {
-                        return (
-                          <MessageResponse
-                            key={partIndex}
-                            mode={isStreamingLast ? "streaming" : "static"}
-                            parseIncompleteMarkdown={isStreamingLast}
-                          >
-                            {part.text}
-                          </MessageResponse>
-                        );
-                      }
-
-                      // Handle tool invocation parts (SDK sends typed part names e.g. tool-get_program_recommendations)
-                      const isToolPart =
-                        part.type === "tool-invocation" ||
-                        part.type === "tool-get_program_recommendations" ||
-                        part.type === "tool-get_conversation_suggestions";
-                      if (isToolPart) {
-                        // Get dynamic messages based on tool type
-                        const getLoadingMessage = () => {
-                          if (
-                            part.type === "tool-get_program_recommendations"
-                          ) {
-                            return "Searching...";
-                          }
-                          if (
-                            part.type === "tool-get_conversation_suggestions"
-                          ) {
-                            return "Thinking...";
-                          }
-                          return "Thinking...";
-                        };
-
-                        const getErrorMessage = () => {
-                          if (
-                            part.type === "tool-get_program_recommendations"
-                          ) {
-                            return "Unable to fetch program recommendations";
-                          }
-                          if (
-                            part.type === "tool-get_conversation_suggestions"
-                          ) {
-                            return "Unable to generate suggestions";
-                          }
-                          return "Unable to complete action";
-                        };
-
-                        // Loading state - tool is being called
-                        if (
-                          part.state === "input-available" ||
-                          part.state === "input-streaming"
-                        ) {
+                        // Handle text parts
+                        if (part.type === "text") {
                           return (
-                            <div
+                            <MessageResponse
                               key={partIndex}
-                              className="flex items-center gap-3"
+                              mode={isStreamingLast ? "streaming" : "static"}
+                              parseIncompleteMarkdown={isStreamingLast}
                             >
-                              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
-                                {getLoadingMessage()}
-                              </span>
-                            </div>
+                              {part.text}
+                            </MessageResponse>
                           );
                         }
 
-                        // Error state - tool execution failed
-                        if (part.state === "output-error") {
-                          return (
-                            <div key={partIndex} className="space-y-2">
-                              <p className="text-sm font-medium text-destructive">
-                                {getErrorMessage()}
-                              </p>
-                              {part.errorText && (
-                                <p className="text-xs text-destructive/80">
-                                  {part.errorText}
+                        // Handle tool invocation parts (SDK sends typed part names e.g. tool-get_program_recommendations)
+                        const isToolPart =
+                          part.type === "tool-invocation" ||
+                          part.type === "tool-get_program_recommendations" ||
+                          part.type === "tool-get_conversation_suggestions";
+                        if (isToolPart) {
+                          // Get dynamic messages based on tool type
+                          const getLoadingMessage = () => {
+                            if (
+                              part.type === "tool-get_program_recommendations"
+                            ) {
+                              return "Searching...";
+                            }
+                            if (
+                              part.type === "tool-get_conversation_suggestions"
+                            ) {
+                              return "Thinking...";
+                            }
+                            return "Thinking...";
+                          };
+
+                          const getErrorMessage = () => {
+                            if (
+                              part.type === "tool-get_program_recommendations"
+                            ) {
+                              return "Unable to fetch program recommendations";
+                            }
+                            if (
+                              part.type === "tool-get_conversation_suggestions"
+                            ) {
+                              return "Unable to generate suggestions";
+                            }
+                            return "Unable to complete action";
+                          };
+
+                          // Loading state - tool is being called
+                          if (
+                            part.state === "input-available" ||
+                            part.state === "input-streaming"
+                          ) {
+                            return (
+                              <div
+                                key={partIndex}
+                                className="flex items-center gap-3"
+                              >
+                                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                                <span className="text-sm text-muted-foreground">
+                                  {getLoadingMessage()}
+                                </span>
+                              </div>
+                            );
+                          }
+
+                          // Error state - tool execution failed
+                          if (part.state === "output-error") {
+                            return (
+                              <div key={partIndex} className="space-y-2">
+                                <p className="text-sm font-medium text-destructive">
+                                  {getErrorMessage()}
                                 </p>
-                              )}
-                            </div>
-                          );
-                        }
-
-                        // Success state - render custom UI based on tool type
-                        if (part.state === "output-available") {
-                          // Render program recommendations
-                          if (
-                            part.type === "tool-get_program_recommendations"
-                          ) {
-                            return (
-                              <ProgramRecommendations
-                                key={partIndex}
-                                result={
-                                  part.output as ProgramRecommendationsResult
-                                }
-                              />
+                                {part.errorText && (
+                                  <p className="text-xs text-destructive/80">
+                                    {part.errorText}
+                                  </p>
+                                )}
+                              </div>
                             );
                           }
 
-                          // Render conversation suggestions
-                          if (
-                            part.type === "tool-get_conversation_suggestions"
-                          ) {
-                            return (
-                              <ConversationSuggestions
-                                key={partIndex}
-                                result={
-                                  part.output as ConversationSuggestionsResult
-                                }
-                                onSuggestionClick={handleSuggestionClick}
-                              />
-                            );
+                          // Success state - render custom UI based on tool type
+                          if (part.state === "output-available") {
+                            // Render program recommendations
+                            if (
+                              part.type === "tool-get_program_recommendations"
+                            ) {
+                              return (
+                                <ProgramRecommendations
+                                  key={partIndex}
+                                  result={
+                                    part.output as ProgramRecommendationsResult
+                                  }
+                                />
+                              );
+                            }
+
+                            // Render conversation suggestions
+                            if (
+                              part.type === "tool-get_conversation_suggestions"
+                            ) {
+                              return (
+                                <ConversationSuggestions
+                                  key={partIndex}
+                                  result={
+                                    part.output as ConversationSuggestionsResult
+                                  }
+                                  onSuggestionClick={handleSuggestionClick}
+                                />
+                              );
+                            }
                           }
                         }
-                      }
 
                         return null;
                       })}

@@ -2,6 +2,8 @@ import type { ConversationSuggestionsResult } from "@/lib/types/suggestion";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Zap, Compass } from "lucide-react";
 
+import { Text } from "./elements/text";
+
 interface ConversationSuggestionsProps {
   result: ConversationSuggestionsResult;
   onSuggestionClick: (text: string) => void;
@@ -40,7 +42,9 @@ export function ConversationSuggestions({
   return (
     <div className="space-y-3 py-2">
       {/* Header */}
-      <p className="text-lg font-bold">{result.prompt}</p>
+      <Text size="lg" className="font-bold">
+        {result.prompt}
+      </Text>
 
       {/* Suggestions Grid */}
       <div className="grid gap-2 sm:grid-cols-2">
