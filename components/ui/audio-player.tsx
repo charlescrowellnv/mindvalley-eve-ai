@@ -24,6 +24,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  StreamingAudioPlayer,
+  type StreamState,
+} from "@/lib/utils/audio-streaming"
 
 enum ReadyState {
   HAVE_NOTHING = 0,
@@ -71,8 +75,13 @@ interface AudioPlayerApi<TData = unknown> {
   setActiveItem: (item: AudioPlayerItem<TData> | null) => Promise<void>
   play: (item?: AudioPlayerItem<TData> | null) => Promise<void>
   pause: () => void
+  stop: () => void
   seek: (time: number) => void
   setPlaybackRate: (rate: number) => void
+  // Streaming properties
+  streamingState: StreamState
+  streamingProgress: number
+  streamAudio: (messageId: string, text: string) => Promise<void>
 }
 
 const AudioPlayerContext = createContext<AudioPlayerApi<unknown> | null>(null)
@@ -117,6 +126,11 @@ export function AudioPlayerProvider<TData = unknown>({
   )
   const [paused, setPaused] = useState(true)
   const [playbackRate, setPlaybackRateState] = useState<number>(1)
+
+  // Streaming state
+  const [streamingState, setStreamingState] = useState<StreamState>("idle")
+  const [streamingProgress, setStreamingProgress] = useState(0)
+  const streamingPlayerRef = useRef<StreamingAudioPlayer | null>(null)
 
   const setActiveItem = useCallback(
     async (item: AudioPlayerItem<TData> | null) => {
@@ -198,6 +212,30 @@ export function AudioPlayerProvider<TData = unknown>({
     playPromiseRef.current = null
   }, [])
 
+  const stop = useCallback(() => {
+    if (!audioRef.current) return
+
+    // Stop streaming player if active
+    if (streamingPlayerRef.current) {
+      streamingPlayerRef.current.stop()
+    }
+
+    // Clear audio element
+    audioRef.current.pause()
+    audioRef.current.currentTime = 0
+    audioRef.current.removeAttribute("src")
+    audioRef.current.load()
+
+    // Clear active item
+    itemRef.current = null
+
+    // Reset streaming state
+    setStreamingState("idle")
+    setStreamingProgress(0)
+
+    playPromiseRef.current = null
+  }, [])
+
   const seek = useCallback((time: number) => {
     if (!audioRef.current) return
     audioRef.current.currentTime = time
@@ -214,6 +252,35 @@ export function AudioPlayerProvider<TData = unknown>({
       return activeItem?.id === id
     },
     [activeItem]
+  )
+
+  const streamAudio = useCallback(
+    async (messageId: string, text: string) => {
+      if (!audioRef.current) return
+
+      // Initialize streaming player if needed
+      if (!streamingPlayerRef.current) {
+        streamingPlayerRef.current = new StreamingAudioPlayer(audioRef.current)
+      }
+
+      // Stop any existing playback
+      if (activeItem) {
+        await pause()
+      }
+
+      // Set active item
+      itemRef.current = { id: messageId, src: "", data: { messageId } as TData }
+
+      // Start streaming
+      await streamingPlayerRef.current.stream("/api/speech-stream", {
+        messageId,
+        text,
+        onStateChange: setStreamingState,
+        onProgress: setStreamingProgress,
+        minBufferSize: 50000,
+      })
+    },
+    [activeItem, pause]
   )
 
   useAnimationFrame(() => {
@@ -247,8 +314,13 @@ export function AudioPlayerProvider<TData = unknown>({
       setActiveItem,
       play,
       pause,
+      stop,
       seek,
       setPlaybackRate,
+      // Streaming API
+      streamingState,
+      streamingProgress,
+      streamAudio,
     }),
     [
       audioRef,
@@ -262,8 +334,12 @@ export function AudioPlayerProvider<TData = unknown>({
       setActiveItem,
       play,
       pause,
+      stop,
       seek,
       setPlaybackRate,
+      streamingState,
+      streamingProgress,
+      streamAudio,
     ]
   )
 

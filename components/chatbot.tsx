@@ -109,9 +109,8 @@ const Chatbot = ({
   // Provide cleanup function to parent
   useEffect(() => {
     const cleanup = () => {
-      // Stop and clear audio completely
-      audioPlayer.pause();
-      audioPlayer.setActiveItem(null);
+      // Stop and clear audio completely (includes stopping streaming)
+      audioPlayer.stop();
 
       // Clear audio from memory
       setAudioMap(new Map());
@@ -131,6 +130,44 @@ const Chatbot = ({
     }
   }, [internalVoiceMode, voiceModeEnabledProp]);
 
+  // Handle voice mode toggle with audio cleanup
+  const handleVoiceModeToggle = useCallback(
+    (enabled: boolean) => {
+      // If turning voice mode off, clean up audio state
+      if (!enabled) {
+        // Fade out if audio is playing
+        if (audioPlayer.isPlaying && audioPlayer.ref.current) {
+          const audio = audioPlayer.ref.current;
+          const fadeOut = setInterval(() => {
+            if (audio.volume > 0.1) {
+              audio.volume = Math.max(0, audio.volume - 0.1);
+            } else {
+              audio.volume = 0;
+              audioPlayer.stop();
+              audio.volume = 1; // Reset volume for next playback
+              clearInterval(fadeOut);
+            }
+          }, 50);
+        } else {
+          // If not playing, just stop immediately
+          audioPlayer.stop();
+        }
+
+        // Clear audio map so it will regenerate when voice mode is turned back on
+        setAudioMap(new Map());
+        setGeneratingSpeech(new Set());
+      }
+
+      // Call the appropriate toggle handler
+      if (onVoiceModeToggle) {
+        onVoiceModeToggle(enabled);
+      } else {
+        setInternalVoiceMode(enabled);
+      }
+    },
+    [audioPlayer, onVoiceModeToggle]
+  );
+
   // Generate speech for a completed message
   const generateSpeechForMessage = useCallback(
     async (messageId: string, text: string) => {
@@ -139,30 +176,50 @@ const Chatbot = ({
       setGeneratingSpeech((prev) => new Set(prev).add(messageId));
 
       try {
-        const response = await fetch("/api/speech", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text }),
-        });
+        // NEW: Use streaming instead of waiting for complete audio
+        await audioPlayer.streamAudio(messageId, text);
 
-        if (!response.ok) {
-          throw new Error("Failed to generate speech");
-        }
-
-        const result = await response.json();
-        setAudioMap((prev) => new Map(prev).set(messageId, result));
-
-        // Create data URL from base64 audio
-        const audioSrc = `data:${result.audio.mediaType};base64,${result.audio.base64}`;
-
-        // Auto-play the new audio if voice mode is enabled
-        await audioPlayer.play({
-          id: messageId,
-          src: audioSrc,
-          data: { messageId },
-        });
+        // Store completion status in audioMap
+        setAudioMap((prev) =>
+          new Map(prev).set(messageId, {
+            audio: {
+              mediaType: "audio/mpeg",
+              format: "mp3" as const,
+              base64: "",
+              uint8Array: new Uint8Array(),
+              streaming: true,
+            },
+            text,
+            timestamp: new Date().toISOString(),
+          })
+        );
       } catch (error) {
-        console.error("TTS error:", error);
+        console.error("TTS streaming error:", error);
+
+        // Fallback to non-streaming approach
+        try {
+          const response = await fetch("/api/speech", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text }),
+          });
+
+          if (!response.ok) {
+            throw new Error("Failed to generate speech");
+          }
+
+          const result = await response.json();
+          const audioSrc = `data:${result.audio.mediaType};base64,${result.audio.base64}`;
+
+          setAudioMap((prev) => new Map(prev).set(messageId, result));
+          await audioPlayer.play({
+            id: messageId,
+            src: audioSrc,
+            data: { messageId },
+          });
+        } catch (fallbackError) {
+          console.error("Fallback TTS also failed:", fallbackError);
+        }
       } finally {
         setGeneratingSpeech((prev) => {
           const next = new Set(prev);
@@ -521,9 +578,7 @@ const Chatbot = ({
 
         <AudioControlBar
           voiceModeEnabled={voiceModeEnabled}
-          onVoiceModeToggle={
-            onVoiceModeToggle || ((enabled) => setInternalVoiceMode(enabled))
-          }
+          onVoiceModeToggle={handleVoiceModeToggle}
           isGenerating={generatingSpeech.size > 0}
         />
 

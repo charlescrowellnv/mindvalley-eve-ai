@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import Chatbot from "./chatbot";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 interface EveButtonProps {
   voiceModeEnabled?: boolean;
@@ -23,14 +23,14 @@ export const EveButton = ({
 }: EveButtonProps) => {
   const [hasMessages, setHasMessages] = useState(false);
   const [open, setOpen] = useState(false);
-  const cleanupRef = useState<(() => void) | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
 
     // When dialog closes, cleanup audio and memory
-    if (!newOpen && cleanupRef[0]) {
-      cleanupRef[0]();
+    if (!newOpen && cleanupRef.current) {
+      cleanupRef.current();
     }
   };
 
@@ -62,7 +62,7 @@ export const EveButton = ({
           voiceModeEnabled={voiceModeEnabled}
           onVoiceModeToggle={onVoiceModeToggle}
           onCleanupReady={(cleanup) => {
-            cleanupRef[0] = cleanup;
+            cleanupRef.current = cleanup;
           }}
         />
       </DialogContent>
@@ -76,14 +76,14 @@ export const EveButtonLg = ({
 }: EveButtonProps) => {
   const [hasMessages, setHasMessages] = useState(false);
   const [open, setOpen] = useState(false);
-  const cleanupRef = useState<(() => void) | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
 
     // When dialog closes, cleanup audio and memory
-    if (!newOpen && cleanupRef[0]) {
-      cleanupRef[0]();
+    if (!newOpen && cleanupRef.current) {
+      cleanupRef.current();
     }
   };
 
@@ -95,8 +95,7 @@ export const EveButtonLg = ({
           variant="secondary"
           className="hover:cursor-pointer hover:shadow-xl text-white bg-linear-to-bl from-indigo-500 to-purple-700"
         >
-          <EvaAiIcon className="size-5 " strokeWidth={1} />
-          Eve AI
+          Get Started
         </Button>
       </DialogTrigger>
       <DialogContent className="flex flex-col h-full">
@@ -119,7 +118,7 @@ export const EveButtonLg = ({
           voiceModeEnabled={voiceModeEnabled}
           onVoiceModeToggle={onVoiceModeToggle}
           onCleanupReady={(cleanup) => {
-            cleanupRef[0] = cleanup;
+            cleanupRef.current = cleanup;
           }}
         />
       </DialogContent>
