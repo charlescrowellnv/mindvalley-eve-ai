@@ -30,8 +30,11 @@ import { ProgramRecommendations } from "@/components/program-recommendations";
 import type { ProgramRecommendationsResult } from "@/lib/types/program";
 import { ConversationSuggestions } from "@/components/conversation-suggestions";
 import type { ConversationSuggestionsResult } from "@/lib/types/suggestion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Play, Pause } from "lucide-react";
 import { Subheading } from "./elements/subheading";
+import type { GeneratedSpeechResult } from "@/lib/types/speech";
+import { useAudioPlayer } from "@/components/ui/audio-player";
+import { AudioControlBar } from "@/components/audio-control-bar";
 
 const suggestions = [
   "I'm feeling stressed, tired, or seeking better sleep",
@@ -64,16 +67,130 @@ const SuggestionItem = ({
 
 interface ChatbotProps {
   onHasMessagesChange?: (hasMessages: boolean) => void;
+  voiceModeEnabled?: boolean;
+  onVoiceModeToggle?: (enabled: boolean) => void;
+  onCleanupReady?: (cleanup: () => void) => void;
 }
 
-const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
+const Chatbot = ({
+  onHasMessagesChange,
+  voiceModeEnabled: voiceModeEnabledProp,
+  onVoiceModeToggle,
+  onCleanupReady,
+}: ChatbotProps) => {
   const [text, setText] = useState<string>("");
+  const [internalVoiceMode, setInternalVoiceMode] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("eve-voice-mode-enabled");
+      return stored === "true";
+    }
+    return false;
+  });
+  const [audioMap, setAudioMap] = useState<Map<string, GeneratedSpeechResult>>(
+    new Map()
+  );
+  const [generatingSpeech, setGeneratingSpeech] = useState<Set<string>>(
+    new Set()
+  );
+
+  // Use prop if provided, otherwise use internal state
+  const voiceModeEnabled =
+    voiceModeEnabledProp !== undefined
+      ? voiceModeEnabledProp
+      : internalVoiceMode;
 
   const { messages, sendMessage, status, error } = useChat();
+  const audioPlayer = useAudioPlayer<{ messageId: string }>();
 
   useEffect(() => {
     onHasMessagesChange?.(messages.length > 0);
   }, [messages.length, onHasMessagesChange]);
+
+  // Provide cleanup function to parent
+  useEffect(() => {
+    const cleanup = () => {
+      // Stop and clear audio completely
+      audioPlayer.pause();
+      audioPlayer.setActiveItem(null);
+
+      // Clear audio from memory
+      setAudioMap(new Map());
+      setGeneratingSpeech(new Set());
+    };
+
+    onCleanupReady?.(cleanup);
+  }, [onCleanupReady, audioPlayer]);
+
+  // Persist voice mode to localStorage when using internal state
+  useEffect(() => {
+    if (typeof window !== "undefined" && voiceModeEnabledProp === undefined) {
+      localStorage.setItem(
+        "eve-voice-mode-enabled",
+        internalVoiceMode.toString()
+      );
+    }
+  }, [internalVoiceMode, voiceModeEnabledProp]);
+
+  // Generate speech for a completed message
+  const generateSpeechForMessage = useCallback(
+    async (messageId: string, text: string) => {
+      if (!voiceModeEnabled || generatingSpeech.has(messageId)) return;
+
+      setGeneratingSpeech((prev) => new Set(prev).add(messageId));
+
+      try {
+        const response = await fetch("/api/speech", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to generate speech");
+        }
+
+        const result = await response.json();
+        setAudioMap((prev) => new Map(prev).set(messageId, result));
+
+        // Create data URL from base64 audio
+        const audioSrc = `data:${result.audio.mediaType};base64,${result.audio.base64}`;
+
+        // Auto-play the new audio if voice mode is enabled
+        await audioPlayer.play({
+          id: messageId,
+          src: audioSrc,
+          data: { messageId },
+        });
+      } catch (error) {
+        console.error("TTS error:", error);
+      } finally {
+        setGeneratingSpeech((prev) => {
+          const next = new Set(prev);
+          next.delete(messageId);
+          return next;
+        });
+      }
+    },
+    [voiceModeEnabled, generatingSpeech, audioPlayer]
+  );
+
+  // Monitor for completed assistant messages and generate speech
+  useEffect(() => {
+    if (!voiceModeEnabled || status === "streaming") return;
+
+    const lastMessage = messages[messages.length - 1];
+    if (!lastMessage || lastMessage.role !== "assistant") return;
+
+    // Extract only text parts (skip tool parts)
+    const textParts = lastMessage.parts
+      .filter((part) => part.type === "text")
+      .map((part) => part.text)
+      .join(" ");
+
+    if (textParts && !audioMap.has(lastMessage.id)) {
+      generateSpeechForMessage(lastMessage.id, textParts);
+    }
+  }, [messages, status, voiceModeEnabled, audioMap, generateSpeechForMessage]);
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
@@ -81,17 +198,47 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
         return;
       }
 
+      // Fade out and pause current audio when sending a new message
+      if (audioPlayer.isPlaying && audioPlayer.ref.current) {
+        const audio = audioPlayer.ref.current;
+        const fadeOut = setInterval(() => {
+          if (audio.volume > 0.1) {
+            audio.volume = Math.max(0, audio.volume - 0.1);
+          } else {
+            audio.volume = 0;
+            audioPlayer.pause();
+            audio.volume = 1; // Reset volume for next playback
+            clearInterval(fadeOut);
+          }
+        }, 50);
+      }
+
       sendMessage({ text: message.text });
       setText("");
     },
-    [sendMessage]
+    [sendMessage, audioPlayer]
   );
 
   const handleSuggestionClick = useCallback(
     (suggestion: string) => {
+      // Fade out and pause current audio when sending a new message
+      if (audioPlayer.isPlaying && audioPlayer.ref.current) {
+        const audio = audioPlayer.ref.current;
+        const fadeOut = setInterval(() => {
+          if (audio.volume > 0.1) {
+            audio.volume = Math.max(0, audio.volume - 0.1);
+          } else {
+            audio.volume = 0;
+            audioPlayer.pause();
+            audio.volume = 1; // Reset volume for next playback
+            clearInterval(fadeOut);
+          }
+        }, 50);
+      }
+
       sendMessage({ text: suggestion });
     },
-    [sendMessage]
+    [sendMessage, audioPlayer]
   );
 
   const handleTextChange = useCallback(
@@ -285,6 +432,50 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
 
                         return null;
                       })}
+
+                      {/* Show play button for assistant messages with audio */}
+                      {/* {message.role === "assistant" &&
+                        audioMap.has(message.id) &&
+                        voiceModeEnabled && (
+                          <div className="mt-3 flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                const audioData = audioMap.get(message.id);
+                                if (audioData) {
+                                  const audioSrc = `data:${audioData.audio.mediaType};base64,${audioData.audio.base64}`;
+                                  const isThisPlaying =
+                                    audioPlayer.activeItem?.id === message.id &&
+                                    audioPlayer.isPlaying;
+
+                                  if (isThisPlaying) {
+                                    audioPlayer.pause();
+                                  } else {
+                                    audioPlayer.play({
+                                      id: message.id,
+                                      src: audioSrc,
+                                      data: { messageId: message.id },
+                                    });
+                                  }
+                                }
+                              }}
+                            >
+                              {audioPlayer.activeItem?.id === message.id &&
+                              audioPlayer.isPlaying ? (
+                                <>
+                                  <Pause className="h-3 w-3 mr-1" />
+                                  Pause
+                                </>
+                              ) : (
+                                <>
+                                  <Play className="h-3 w-3 mr-1" />
+                                  Play audio
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        )} */}
                     </MessageContent>
                   </Message>
                 );
@@ -309,6 +500,7 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
+
       <div className="grid shrink-0 gap-4 pt-4">
         {messages.length === 0 && (
           <div className="flex flex-col gap-2 px-4">
@@ -326,6 +518,15 @@ const Chatbot = ({ onHasMessagesChange }: ChatbotProps) => {
             </div>
           </div>
         )}
+
+        <AudioControlBar
+          voiceModeEnabled={voiceModeEnabled}
+          onVoiceModeToggle={
+            onVoiceModeToggle || ((enabled) => setInternalVoiceMode(enabled))
+          }
+          isGenerating={generatingSpeech.size > 0}
+        />
+
         <div className="w-full px-4 pb-4">
           <PromptInput onSubmit={handleSubmit}>
             <PromptInputBody>

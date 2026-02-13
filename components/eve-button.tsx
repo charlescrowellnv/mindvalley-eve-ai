@@ -12,11 +12,30 @@ import {
 import Chatbot from "./chatbot";
 import { useState } from "react";
 
-export const EveButton = () => {
+interface EveButtonProps {
+  voiceModeEnabled?: boolean;
+  onVoiceModeToggle?: (enabled: boolean) => void;
+}
+
+export const EveButton = ({
+  voiceModeEnabled,
+  onVoiceModeToggle,
+}: EveButtonProps) => {
   const [hasMessages, setHasMessages] = useState(false);
+  const [open, setOpen] = useState(false);
+  const cleanupRef = useState<(() => void) | null>(null);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+
+    // When dialog closes, cleanup audio and memory
+    if (!newOpen && cleanupRef[0]) {
+      cleanupRef[0]();
+    }
+  };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button size="lg" variant="secondary" className="hover:cursor-pointer">
           <EvaAiIcon className="size-5" strokeWidth={1} gradient />
@@ -38,17 +57,38 @@ export const EveButton = () => {
             <DialogTitle className="sr-only">Eve AI</DialogTitle>
           </div>
         </DialogHeader>
-        <Chatbot onHasMessagesChange={setHasMessages} />
+        <Chatbot
+          onHasMessagesChange={setHasMessages}
+          voiceModeEnabled={voiceModeEnabled}
+          onVoiceModeToggle={onVoiceModeToggle}
+          onCleanupReady={(cleanup) => {
+            cleanupRef[0] = cleanup;
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
 };
 
-export const EveButtonLg = () => {
+export const EveButtonLg = ({
+  voiceModeEnabled,
+  onVoiceModeToggle,
+}: EveButtonProps) => {
   const [hasMessages, setHasMessages] = useState(false);
+  const [open, setOpen] = useState(false);
+  const cleanupRef = useState<(() => void) | null>(null);
+
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+
+    // When dialog closes, cleanup audio and memory
+    if (!newOpen && cleanupRef[0]) {
+      cleanupRef[0]();
+    }
+  };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           size="xl"
@@ -74,7 +114,14 @@ export const EveButtonLg = () => {
             <DialogTitle className="sr-only">Eve AI</DialogTitle>
           </div>
         </DialogHeader>
-        <Chatbot onHasMessagesChange={setHasMessages} />
+        <Chatbot
+          onHasMessagesChange={setHasMessages}
+          voiceModeEnabled={voiceModeEnabled}
+          onVoiceModeToggle={onVoiceModeToggle}
+          onCleanupReady={(cleanup) => {
+            cleanupRef[0] = cleanup;
+          }}
+        />
       </DialogContent>
     </Dialog>
   );
