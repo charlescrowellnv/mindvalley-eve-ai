@@ -1,6 +1,6 @@
 import { clsx } from 'clsx/lite'
+import { ChevronRightIcon } from 'lucide-react'
 import type { ComponentProps, ReactNode } from 'react'
-import { ChevronIcon } from '../icons/chevron-icon'
 
 export function AnnouncementBadge({
   text,
@@ -43,7 +43,7 @@ export function AnnouncementBadge({
           variant === 'normal' && 'text-mist-950 dark:text-white',
         )}
       >
-        {cta} <ChevronIcon className="shrink-0" />
+        {cta} <ChevronRightIcon className="size-4 shrink-0" />
       </span>
     </a>
   )
