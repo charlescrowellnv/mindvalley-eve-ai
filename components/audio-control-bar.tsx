@@ -27,8 +27,17 @@ export function AudioControlBar({
   isGenerating = false,
   className,
 }: AudioControlBarProps) {
-  const { isPlaying, play, pause, seek, duration, activeItem, ref } =
-    useAudioPlayer();
+  const {
+    isPlaying,
+    play,
+    pause,
+    seek,
+    duration,
+    activeItem,
+    ref,
+    streamingState,
+    streamingProgress,
+  } = useAudioPlayer();
 
   const handlePlayPause = () => {
     if (isPlaying) {
@@ -52,6 +61,50 @@ export function AudioControlBar({
     }
   };
 
+  // Show connecting/buffering state
+  if (
+    streamingState === "connecting" ||
+    streamingState === "buffering" ||
+    streamingState === "streaming"
+  ) {
+    return (
+      <div className={cn("flex flex-col gap-3 pt-4 px-4 border-t", className)}>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" disabled>
+              -10s
+            </Button>
+            <Button variant="outline" size="icon-sm" disabled>
+              <Play />
+            </Button>
+            <Button variant="ghost" size="sm" disabled>
+              +10s
+            </Button>
+          </div>
+
+          <div className="flex-1 flex items-center justify-center gap-2">
+            <Loader2 className="animate-spin size-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              {streamingState === "connecting"
+                ? "Connecting..."
+                : `Loading...
+                `}
+            </span>
+          </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onVoiceModeToggle(false)}
+          >
+            <Volume2 />
+            Voice On
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   if (!voiceModeEnabled) {
     return (
       <div
@@ -63,10 +116,11 @@ export function AudioControlBar({
         <Button
           variant="outline"
           size="sm"
+          className="text-muted-foreground"
           onClick={() => onVoiceModeToggle(true)}
         >
-          <Volume2 />
-          Voice On
+          <VolumeX />
+          Voice Off
         </Button>
       </div>
     );
@@ -98,10 +152,11 @@ export function AudioControlBar({
           <Button
             variant="outline"
             size="sm"
+            className="text-muted-foreground"
             onClick={() => onVoiceModeToggle(false)}
           >
-            <VolumeX />
-            Voice Off
+            <Volume2 />
+            Voice On
           </Button>
         </div>
       </div>
@@ -119,10 +174,11 @@ export function AudioControlBar({
         <Button
           variant="outline"
           size="sm"
+          className="text-muted-foreground"
           onClick={() => onVoiceModeToggle(false)}
         >
-          <VolumeX />
-          Voice Off
+          <Volume2 />
+          Voice On
         </Button>
       </div>
     );
@@ -171,8 +227,8 @@ export function AudioControlBar({
           size="sm"
           onClick={() => onVoiceModeToggle(false)}
         >
-          <VolumeX className="text-destructive" />
-          Voice Off
+          <Volume2 />
+          Voice On
         </Button>
       </div>
     </div>
