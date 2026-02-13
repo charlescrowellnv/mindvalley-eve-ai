@@ -4,10 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run scrape-programs && next build",
+    "build": "next build",
     "start": "next start",
-    "lint": "eslint",
-    "scrape-programs": "tsx scripts/scrape-programs.ts"
+    "lint": "eslint"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.42",

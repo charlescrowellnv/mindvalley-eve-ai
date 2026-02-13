@@ -4,7 +4,7 @@ import { ThemeButton } from "@/components/theme-button";
 
 export function Header() {
   return (
-    <div className="h-16 border-b w-full flex items-center justify-center">
+    <div className="h-16 w-full flex items-center justify-center">
       <div className="flex items-center justify-between px-4 w-full">
         <Image
           src="/mv-logo-purple.svg"
