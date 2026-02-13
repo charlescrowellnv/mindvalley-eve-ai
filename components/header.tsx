@@ -23,10 +23,10 @@ export function Header({
           className="h-6 w-auto"
         />
         <div className="flex items-center gap-2">
-          <EveButton
+          {/* <EveButton
             voiceModeEnabled={voiceModeEnabled}
             onVoiceModeToggle={onVoiceModeToggle}
-          />
+          /> */}
           <ThemeButton />
         </div>
       </div>

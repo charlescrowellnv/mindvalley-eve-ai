@@ -1,8 +1,8 @@
-import { clsx } from 'clsx/lite'
-import type { ComponentProps, ReactNode } from 'react'
-import { Container } from '../elements/container'
-import { Heading } from '../elements/heading'
-import { Text } from '../elements/text'
+import { clsx } from "clsx/lite";
+import type { ComponentProps, ReactNode } from "react";
+import { Container } from "../elements/container";
+import { Heading } from "../elements/heading";
+import { Text } from "../elements/text";
 
 export function HeroSimpleCentered({
   eyebrow,
@@ -12,13 +12,13 @@ export function HeroSimpleCentered({
   className,
   ...props
 }: {
-  eyebrow?: ReactNode
-  headline: ReactNode
-  subheadline: ReactNode
-  cta?: ReactNode
-} & ComponentProps<'section'>) {
+  eyebrow?: ReactNode;
+  headline: ReactNode;
+  subheadline: ReactNode;
+  cta?: ReactNode;
+} & ComponentProps<"section">) {
   return (
-    <section className={clsx('py-16', className)} {...props}>
+    <section className={clsx("py-16", className)} {...props}>
       <Container className="flex flex-col items-center gap-6">
         {eyebrow}
         <Heading className="max-w-5xl text-center">{headline}</Heading>
@@ -28,5 +28,5 @@ export function HeroSimpleCentered({
         {cta}
       </Container>
     </section>
-  )
+  );
 }

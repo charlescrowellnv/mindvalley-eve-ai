@@ -1,5 +1,7 @@
 import { EveButtonLg } from "@/components/eve-button";
-import { HeroCenteredWithPhoto } from "@/components/sections/hero-centered-with-photo";
+import { EvaAiPlanet } from "@/components/eve-ai-planet";
+import { HeroSimpleCentered } from "@/components/sections/hero-simple-centered";
+import { Eyebrow } from "./elements/eyebrow";
 
 interface LandingPageProps {
   voiceModeEnabled?: boolean;
@@ -11,11 +13,12 @@ export const LandingPage = ({
   onVoiceModeToggle,
 }: LandingPageProps) => {
   return (
-    <div className="w-full flex flex-col h-screen">
-      <HeroCenteredWithPhoto
-        className="h-screen pt-32 bg-linear-to-b from-bg via-bg from-30% to-primary/50"
-        headline="Meet Eve"
-        subheadline="by Mindvalley"
+    <div className="relative w-full flex flex-col h-screen overflow-hidden">
+      <EvaAiPlanet className="absolute left-1/2 top-1/2 z-0 flex -translate-x-1/2 -translate-y-1/8 opacity-50" />
+      <HeroSimpleCentered
+        className="relative z-10 h-full pt-32 bg-linear-to-b from-bg via-bg from-30% to-primary/50"
+        headline="Eve AI"
+        subheadline=""
         cta={
           <EveButtonLg
             voiceModeEnabled={voiceModeEnabled}
