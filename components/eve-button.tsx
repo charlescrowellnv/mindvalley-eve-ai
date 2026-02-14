@@ -28,9 +28,13 @@ export const EveButton = ({
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
 
-    // When dialog closes, cleanup audio and memory
-    if (!newOpen && cleanupRef.current) {
-      cleanupRef.current();
+    // When dialog closes, cleanup audio and refresh page to stop any in-flight streams
+    if (!newOpen) {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+      // Refresh page to interrupt any delayed streaming requests
+      window.location.reload();
     }
   };
 
@@ -81,9 +85,13 @@ export const EveButtonLg = ({
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
 
-    // When dialog closes, cleanup audio and memory
-    if (!newOpen && cleanupRef.current) {
-      cleanupRef.current();
+    // When dialog closes, cleanup audio and refresh page to stop any in-flight streams
+    if (!newOpen) {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+      }
+      // Refresh page to interrupt any delayed streaming requests
+      window.location.reload();
     }
   };
 
