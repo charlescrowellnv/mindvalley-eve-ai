@@ -6,6 +6,7 @@ import {
   Dialog,
   DialogTrigger,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -46,6 +47,9 @@ export const EveButton2 = ({ agentId }: EveButton2Props) => {
             <DialogTitle className="sr-only">Eve AI</DialogTitle>
           </div>
         </DialogHeader>
+        <DialogDescription className="sr-only">
+          Voice chat with Eve AI assistant. Start or continue a conversation.
+        </DialogDescription>
         <VoiceChatRevised
           agentId={agentId}
           className="flex-1"
@@ -87,6 +91,9 @@ export const EveButton2Lg = ({ agentId }: EveButton2Props) => {
             <DialogTitle className="sr-only">Eve AI</DialogTitle>
           </div>
         </DialogHeader>
+        <DialogDescription className="sr-only">
+          Voice chat with Eve AI assistant. Start or continue a conversation.
+        </DialogDescription>
         <VoiceChatRevised
           agentId={agentId}
           className="flex-1"

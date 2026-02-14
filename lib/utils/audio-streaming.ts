@@ -95,7 +95,7 @@ export class StreamingAudioPlayer {
   }
 
   private async startPlayback(): Promise<void> {
-    const blob = new Blob(this.chunks, { type: "audio/mpeg" });
+    const blob = new Blob(this.chunks as BlobPart[], { type: "audio/mpeg" });
     this.currentBlobUrl = URL.createObjectURL(blob);
 
     this.audioElement.src = this.currentBlobUrl;

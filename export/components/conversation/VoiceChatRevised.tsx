@@ -15,7 +15,6 @@ import {
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Oscilloscope } from "@/components/ui/oscilloscope";
 import {
@@ -47,29 +46,15 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import type { ToolUIPart } from "ai";
-import { useToolExecution } from "@/hooks/use-tool-execution";
+import { useToolExecution } from "@/export/hooks/useToolExecution";
 import { createClientTools } from "@/lib/client-tools";
 import type {
   ToolContext,
   ToolExecutionState,
   ToolExecution,
 } from "@/lib/types";
-import { ProgramRecommendations } from "@/components/program-recommendations";
-import { ConversationSuggestions } from "@/components/conversation-suggestions";
-import { EvaAiIcon } from "@/components/icons/eva-ai-icon";
-import { Loader2 } from "lucide-react";
-import { Subheading } from "@/components/elements/subheading";
-import type { ProgramRecommendationsResult } from "@/lib/types/program";
-import type { ConversationSuggestionsResult } from "@/lib/types/suggestion";
 
 const DEFAULT_AGENT_ID = process.env.NEXT_PUBLIC_ELEVENLABS_AGENT_ID!;
-
-const INITIAL_SUGGESTIONS = [
-  "I'm feeling stressed, tired, or seeking better sleep",
-  "I'm looking to lose weight and improve my fitness",
-  "I want to develop a growth mindset and increase my self-confidence",
-  "I want to enhance my leadership skills, build a strong team, or inspire others",
-];
 
 // ============================================================================
 // Types
@@ -163,7 +148,7 @@ function ActiveSessionButton({
       <Play
         className={
           (!isTransitioning && !isConnected ? "block" : "hidden") +
-          " text-primary"
+          " text-green-500"
         }
       />
       <Square
@@ -207,65 +192,15 @@ function ToolExecutionDisplay({
   parameters,
   result,
   error,
-  onSuggestionClick,
 }: {
   toolName: string;
   state: ToolExecutionState;
   parameters: Record<string, unknown>;
   result?: unknown;
   error?: string;
-  onSuggestionClick?: (text: string) => void;
 }) {
-  // Loading state
-  if (state === "pending" || state === "executing") {
-    return (
-      <div className="flex items-center gap-2 text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-sm">
-          {toolName === "get_program_recommendations"
-            ? "Searching programs..."
-            : "Thinking..."}
-        </span>
-      </div>
-    );
-  }
-
-  // Error state
-  if (state === "error") {
-    return (
-      <div className="rounded-lg border border-destructive bg-destructive/10 p-4">
-        <p className="font-medium text-destructive text-sm">Error</p>
-        <p className="text-muted-foreground text-sm">
-          {error || "An error occurred"}
-        </p>
-      </div>
-    );
-  }
-
-  // Success state - render custom UI based on tool type
-  if (state === "completed" && result) {
-    // Program Recommendations Tool
-    if (toolName === "get_program_recommendations") {
-      return (
-        <ProgramRecommendations
-          result={result as ProgramRecommendationsResult}
-        />
-      );
-    }
-
-    // Conversation Suggestions Tool
-    if (toolName === "get_conversation_suggestions" && onSuggestionClick) {
-      return (
-        <ConversationSuggestions
-          result={result as ConversationSuggestionsResult}
-          onSuggestionClick={onSuggestionClick}
-        />
-      );
-    }
-  }
-
-  // Fallback: show generic tool output
   const toolState = mapToolState(state);
+
   return (
     <Tool defaultOpen={false}>
       <ToolHeader type="dynamic-tool" state={toolState} toolName={toolName} />
@@ -340,14 +275,12 @@ function VoiceInputArea({
           processing={agentState === "connecting"}
           audioSource="external-data"
           getFrequencyData={getInputFrequencyData}
-          gradientStartColor="#06b6d4"
-          gradientEndColor="#3b82f6"
-          lineWidth={4}
+          lineWidth={2}
           height={8}
           sensitivity={1}
           smoothingTimeConstant={1}
-          fftSize={8192}
-          curveDetail={8}
+          fftSize={2048}
+          curveDetail={32}
         />
       </div>
 
@@ -366,17 +299,15 @@ function VoiceInputArea({
 
 function TextInputControls({ onSwitchToPTT }: { onSwitchToPTT: () => void }) {
   return (
-    <div className="flex items-center gap-2">
-      <Button
-        variant="outline"
-        size="icon"
-        className="rounded-full text-muted-foreground"
-        onClick={onSwitchToPTT}
-        aria-label="Switch to push-to-talk mode"
-      >
-        <Mic className="h-4 w-4" />
-      </Button>
-    </div>
+    <Button
+      variant="outline"
+      size="icon"
+      className="rounded-full text-muted-foreground"
+      onClick={onSwitchToPTT}
+      aria-label="Switch to push-to-talk mode"
+    >
+      <Mic className="h-4 w-4" />
+    </Button>
   );
 }
 
@@ -466,50 +397,17 @@ function PTTPromptInput({
 }
 
 // ============================================================================
-// Suggestion Components
-// ============================================================================
-
-interface SuggestionItemProps {
-  suggestion: string;
-  onClick: (suggestion: string) => void;
-  disabled?: boolean;
-}
-
-const SuggestionItem = React.memo(
-  ({ suggestion, onClick, disabled }: SuggestionItemProps) => {
-    const handleClick = React.useCallback(() => {
-      onClick(suggestion);
-    }, [onClick, suggestion]);
-
-    return (
-      <Button
-        variant="outline"
-        className="h-auto w-full justify-start px-4 py-3 text-left whitespace-normal"
-        onClick={handleClick}
-        disabled={disabled}
-      >
-        <span className="text-sm">{suggestion}</span>
-      </Button>
-    );
-  }
-);
-
-SuggestionItem.displayName = "SuggestionItem";
-
-// ============================================================================
 // Main Component
 // ============================================================================
 
 export interface VoiceChatRevisedProps {
   agentId?: string;
   className?: string;
-  onHasMessagesChange?: (hasMessages: boolean) => void;
 }
 
 const VoiceChatRevisedInner = ({
   agentId = DEFAULT_AGENT_ID,
   className,
-  onHasMessagesChange,
 }: VoiceChatRevisedProps) => {
   const controller = usePromptInputController();
 
@@ -549,8 +447,7 @@ const VoiceChatRevisedInner = ({
     [addExecution, updateExecution]
   );
 
-  // ElevenLabs conversation hook with client tools.
-  // If onDebug never fires (no streaming): see docs/WHY-ONDEBUG-NOT-FIRING.md and docs/TROUBLESHOOTING.md.
+  // ElevenLabs conversation hook with client tools
   const conversation = useConversation({
     onConnect: () => {
       setAgentState("connected");
@@ -559,45 +456,9 @@ const VoiceChatRevisedInner = ({
       setAgentState("disconnected");
     },
     onDebug: (event: unknown) => {
-      // Handle SDK's actual shape: { type: "tentative_agent_response", response: string }
-      // (SDK sends this when server emits internal_tentative_agent_response; see docs/STREAMING-ONDEBUG.md)
-      if (
-        event &&
-        typeof event === "object" &&
-        "type" in event &&
-        event.type === "tentative_agent_response" &&
-        "response" in event &&
-        typeof (event as { response: unknown }).response === "string"
-      ) {
-        const response = (event as { response: string }).response;
-        const streamingId = streamingMessageIdRef.current;
-        if (!streamingId) {
-          const now = Date.now();
-          const messageId = `streaming-${now}`;
-          streamingMessageIdRef.current = messageId;
-          streamingStartTimestampRef.current = now;
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant" as const,
-              content: response,
-              timestamp: now,
-              id: messageId,
-            },
-          ]);
-        } else {
-          setMessages((prev) => {
-            const idx = prev.findIndex((msg) => msg.id === streamingId);
-            if (idx === -1) return prev;
-            const updated = [...prev];
-            updated[idx] = { ...updated[idx], content: response };
-            return updated;
-          });
-        }
-        return;
-      }
+      console.log("[Debug Event]", event);
 
-      // Handle agent_chat_response_part - streaming text chunks (alternative/legacy shape)
+      // Handle agent_chat_response_part - streaming text chunks
       // Type guard for the event structure
       if (
         event &&
@@ -610,6 +471,7 @@ const VoiceChatRevisedInner = ({
           type?: string;
           text?: string;
         };
+        console.log("[Streaming chunk]", chunk);
 
         if (chunk?.type === "start") {
           // Start of a new response - create a new assistant message with unique ID
@@ -653,6 +515,8 @@ const VoiceChatRevisedInner = ({
       }
     },
     onMessage: (message) => {
+      console.log("[onMessage]", message);
+
       if (message.source === "user") {
         // Add user message
         // If we have a pending placeholder, replace it; otherwise add new message
@@ -697,12 +561,10 @@ const VoiceChatRevisedInner = ({
         setMessages((prev) => {
           // If we have a streaming message ID, find and update that specific message
           const streamingId = streamingMessageIdRef.current;
-
           if (streamingId) {
             const messageIndex = prev.findIndex(
               (msg) => msg.id === streamingId
             );
-
             if (messageIndex !== -1) {
               // Update the streaming message with final content
               const updatedMessages = [...prev];
@@ -717,13 +579,6 @@ const VoiceChatRevisedInner = ({
           }
 
           // Fallback: add as new message if no streaming message found
-          // Dedupe: SDK or double-mount can fire onMessage(assistant) twice per response
-          const last = prev[prev.length - 1];
-          if (last?.role === "assistant" && last.content === message.message) {
-            streamingMessageIdRef.current = null;
-            streamingStartTimestampRef.current = null;
-            return prev;
-          }
           streamingMessageIdRef.current = null; // Clear the streaming ID
           streamingStartTimestampRef.current = null; // Clear the timestamp
           return [
@@ -756,11 +611,6 @@ const VoiceChatRevisedInner = ({
     clientTools: createClientTools(toolContext),
   });
 
-  const conversationRef = React.useRef(conversation);
-  React.useEffect(() => {
-    conversationRef.current = conversation;
-  }, [conversation]);
-
   // Get microphone stream (only for voice mode)
   const getMicStream = React.useCallback(async () => {
     if (mediaStreamRef.current) return mediaStreamRef.current;
@@ -784,7 +634,7 @@ const VoiceChatRevisedInner = ({
 
       await conversation.startSession({
         agentId,
-        connectionType: "webrtc",
+        connectionType: "websocket",
         onStatusChange: (status) => setAgentState(status.status),
       });
 
@@ -822,11 +672,6 @@ const VoiceChatRevisedInner = ({
     (message: { text: string; files: unknown[] }) => {
       if (!message.text.trim() || agentState !== "connected") return;
 
-      // Interrupt agent if currently speaking
-      if (conversation.isSpeaking) {
-        conversation.sendUserActivity();
-      }
-
       const userMessage: ChatMessage = {
         role: "user",
         content: message.text,
@@ -853,95 +698,6 @@ const VoiceChatRevisedInner = ({
     [controller, agentState]
   );
 
-  // Handle suggestion clicks
-  const handleSuggestionClick = React.useCallback(
-    (text: string) => {
-      if (agentState !== "connected") return;
-
-      // Interrupt agent if currently speaking
-      if (conversation.isSpeaking) {
-        conversation.sendUserActivity();
-      }
-
-      // Add user message to UI
-      const userMessage: ChatMessage = {
-        role: "user",
-        content: text,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, userMessage]);
-
-      // Send to agent
-      conversation.sendUserMessage(text);
-    },
-    [conversation, agentState]
-  );
-
-  // Handle initial suggestion clicks (may need to start session first)
-  const handleInitialSuggestionClick = React.useCallback(
-    async (text: string) => {
-      // If not connected, start session first
-      if (agentState === "disconnected") {
-        try {
-          setAgentState("connecting");
-          setErrorMessage(null);
-
-          // Get mic stream if in voice mode
-          if (inputMode === "voice") {
-            await getMicStream();
-          }
-
-          await conversation.startSession({
-            agentId,
-            connectionType: "webrtc",
-            onStatusChange: (status) => setAgentState(status.status),
-          });
-
-          // Clear messages and executions
-          setMessages([]);
-          clearExecutions();
-
-          // Wait a brief moment for connection to fully establish
-          // Then send the message
-          setTimeout(() => {
-            if (conversation.isSpeaking) {
-              conversation.sendUserActivity();
-            }
-
-            const userMessage: ChatMessage = {
-              role: "user",
-              content: text,
-              timestamp: Date.now(),
-            };
-            setMessages((prev) => [...prev, userMessage]);
-            conversation.sendUserMessage(text);
-          }, 500);
-        } catch (error) {
-          console.error("Error starting conversation from suggestion:", error);
-          setAgentState("disconnected");
-          setErrorMessage(
-            error instanceof Error
-              ? error.message
-              : "Failed to start conversation"
-          );
-        }
-      } else if (agentState === "connected") {
-        // Already connected, just send the message
-        handleSuggestionClick(text);
-      }
-      // If connecting/disconnecting, do nothing
-    },
-    [
-      agentState,
-      inputMode,
-      getMicStream,
-      conversation,
-      agentId,
-      clearExecutions,
-      handleSuggestionClick,
-    ]
-  );
-
   // Mode cycling and switching
   const cycleInputMode = React.useCallback(() => {
     setInputMode((current) => nextInputMode(current));
@@ -965,15 +721,9 @@ const VoiceChatRevisedInner = ({
     }
   }, [useVoiceResponse, agentState, conversation]);
 
-  // Notify parent when messages change
-  React.useEffect(() => {
-    onHasMessagesChange?.(messages.length > 0);
-  }, [messages.length, onHasMessagesChange]);
-
-  // Cleanup on unmount: end session and stop mic (prevents duplicate audio from stale session after Strict Mode double-mount or dialog close)
+  // Cleanup on unmount
   React.useEffect(() => {
     return () => {
-      conversationRef.current?.endSession?.();
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach((t) => t.stop());
       }
@@ -994,72 +744,20 @@ const VoiceChatRevisedInner = ({
   return (
     <div
       className={cn(
-        "flex h-full flex-col gap-4 overflow-hidden w-full",
+        "flex h-full flex-col gap-4 p-4 overflow-hidden",
         className
       )}
     >
       {/* Message History */}
-      <Conversation className="min-h-0 flex-1">
-        <ConversationContent className="gap-8 max-w-4xl mx-auto">
+      <Conversation className="min-h-0 flex-1 rounded-xl border border-dashed">
+        <ConversationContent className="gap-4">
           {timeline.length === 0 ? (
-            <div className="flex min-h-full flex-1 flex-col items-center justify-center gap-4 w-full">
-              <div className="flex flex-col items-start justify-center gap-4">
-                <div className="flex items-center justify-center gap-2">
-                  <EvaAiIcon className="size-6" strokeWidth={1} gradient />
-                  <span className="text-lg text-foreground">Eve</span>
-                </div>
-                <Subheading className="text-3xl text-foreground font-semibold">
-                  Hey Changemaker, ready?
-                </Subheading>
-                <ul className="flex flex-col items-start gap-6 w-full text-muted-foreground text-sm list-none py-4">
-                  <li>
-                    <div className="flex flex-col items-start justify-center gap-1">
-                      <span className="font-medium text-foreground text-lg">
-                        Explore Mindvalley
-                      </span>
-                      Easily find what you&apos;re looking for across
-                      Mindvalley.
-                    </div>
-                  </li>
-                  <li>
-                    <div className="flex flex-col items-start justify-center gap-1">
-                      <span className="font-medium text-foreground text-lg">
-                        Get personalized guidance
-                      </span>
-                      Share your goals or situation to get tailored
-                      recommendations.
-                    </div>
-                  </li>
-                  <li>
-                    <div className="flex flex-col items-start justify-center gap-1">
-                      <span className="font-medium text-foreground text-lg">
-                        Need help?
-                      </span>
-                      Get support for the app, membership, certifications, and
-                      more.
-                    </div>
-                  </li>
-                </ul>
-
-                {/* Initial Suggestions Section */}
-                <div className="flex flex-col gap-2 w-full pt-4">
-                  <Label className="text-sm font-medium text-muted-foreground">
-                    Try one of these:
-                  </Label>
-                  <div className="grid w-full sm:grid-cols-2 gap-2">
-                    {INITIAL_SUGGESTIONS.map((suggestion) => (
-                      <SuggestionItem
-                        key={suggestion}
-                        suggestion={suggestion}
-                        onClick={handleInitialSuggestionClick}
-                        disabled={
-                          agentState === "connecting" ||
-                          agentState === "disconnecting"
-                        }
-                      />
-                    ))}
-                  </div>
-                </div>
+            <div className="flex h-full items-center justify-center text-center text-muted-foreground">
+              <div className="space-y-2">
+                <p className="text-lg font-medium">Ready to chat</p>
+                <p className="text-sm">
+                  Select your input mode and start a session
+                </p>
               </div>
             </div>
           ) : (
@@ -1084,7 +782,6 @@ const VoiceChatRevisedInner = ({
                     parameters={item.data.parameters}
                     result={item.data.result}
                     error={item.data.error}
-                    onSuggestionClick={handleSuggestionClick}
                   />
                 );
               }
@@ -1115,7 +812,7 @@ const VoiceChatRevisedInner = ({
       </Conversation>
 
       {/* Agent Area - Rounded Pill */}
-      <div className="rounded-full border p-2 max-w-xl mx-auto w-full">
+      <div className="rounded-full border p-2">
         <div className="flex items-center justify-between gap-4">
           <AgentVoiceModeButton
             voiceOn={useVoiceResponse}
@@ -1129,14 +826,12 @@ const VoiceChatRevisedInner = ({
               processing={agentState === "connecting"}
               audioSource="external-data"
               getFrequencyData={conversation.getOutputByteFrequencyData}
-              gradientStartColor="#6366f1"
-              gradientEndColor="#ec4899"
-              lineWidth={4}
+              lineWidth={2}
               height={12}
               sensitivity={1}
               smoothingTimeConstant={1}
-              fftSize={8192}
-              curveDetail={8}
+              fftSize={2048}
+              curveDetail={32}
             />
           </div>
 
@@ -1149,7 +844,7 @@ const VoiceChatRevisedInner = ({
       </div>
 
       {/* User Input Area - Rounded Card */}
-      <div className="max-w-xl mx-auto w-full">
+      <div>
         {!isConnected ? (
           /* Idle State - Session Not Started */
           <div></div>
@@ -1157,7 +852,7 @@ const VoiceChatRevisedInner = ({
           /* Active State - Session Connected */
           <div className="flex flex-col gap-2 rounded-xl border p-2 dark:bg-input/30">
             {/* Row 1: Mode controls and quick actions */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <InputModeButton mode={inputMode} onCycle={cycleInputMode} />
 
               {inputMode === "voice" && (

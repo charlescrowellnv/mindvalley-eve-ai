@@ -1,17 +1,7 @@
-import { EveButton } from "./eve-button";
 import Image from "next/image";
 import { ThemeButton } from "@/components/theme-button";
-import { VoiceModeButton } from "@/components/voice-mode-button";
 
-interface HeaderProps {
-  voiceModeEnabled?: boolean;
-  onVoiceModeToggle?: (enabled: boolean) => void;
-}
-
-export function Header({
-  voiceModeEnabled = false,
-  onVoiceModeToggle,
-}: HeaderProps) {
+export function Header({}: HeaderProps) {
   return (
     <div className="h-16 w-full flex items-center justify-center">
       <div className="flex items-center justify-between px-4 w-full">
@@ -20,7 +10,7 @@ export function Header({
           alt="Mindvalley Logo"
           width={56}
           height={24}
-          className="h-6 w-auto"
+          className="h-6"
         />
         <div className="flex items-center gap-2">
           {/* <EveButton

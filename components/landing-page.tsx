@@ -1,4 +1,5 @@
 import { EveButtonLg } from "@/components/eve-button";
+import { EveButton2Lg } from "@/components/eve-button-2";
 import { EvaAiPlanet } from "@/components/eve-ai-planet";
 import { HeroSimpleCentered } from "@/components/sections/hero-simple-centered";
 import { Eyebrow } from "./elements/eyebrow";
@@ -20,10 +21,13 @@ export const LandingPage = ({
         headline="Eve AI"
         subheadline=""
         cta={
-          <EveButtonLg
-            voiceModeEnabled={voiceModeEnabled}
-            onVoiceModeToggle={onVoiceModeToggle}
-          />
+          <div className="flex flex-col sm:flex-row gap-4">
+            <EveButtonLg
+              voiceModeEnabled={voiceModeEnabled}
+              onVoiceModeToggle={onVoiceModeToggle}
+            />
+            <EveButton2Lg />
+          </div>
         }
       />
     </div>
