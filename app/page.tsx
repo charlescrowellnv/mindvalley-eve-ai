@@ -26,10 +26,7 @@ export default function Page() {
   return (
     <AudioPlayerProvider>
       <div className="min-h-screen flex flex-col">
-        <Header
-          voiceModeEnabled={voiceModeEnabled}
-          onVoiceModeToggle={setVoiceModeEnabled}
-        />
+        <Header />
         <LandingPage
           voiceModeEnabled={voiceModeEnabled}
           onVoiceModeToggle={setVoiceModeEnabled}
